@@ -46,14 +46,22 @@ app.post("/signup", (req, res) => {
     console.log(err);
     //if the email id is available
     if (result) {
-      res.send({ message: "Email id already exists" });
+      res.send({ message: "Email id already exists", alert:false});
     } else {
       //to save email id
       const data = userModel(req.body);
       const save = data.save();
-      res.send({ message: "Successfully signed up" });
+      res.send({ message: "Successfully signed up" ,alert: true});
     }
   });
 });
+
+
+//login api
+
+app.post("/login",(req,res)=>{
+  console.log(req.body)
+
+})
 
 app.listen(PORT, () => console.log("server is running at: " + PORT));
