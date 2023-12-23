@@ -1,23 +1,59 @@
-const express= require("express")
-const cors=require("cors")
-const mongoose=require("mongoose")
+const express = require("express");
+const cors = require("cors");
+const mongoose = require("mongoose");
+const dotenv = require("dotenv").config();
 
-const app=express()
-app.use(cors())
-app.use(express.json({limit : " 10mb"}))
+const app = express();
+app.use(cors());
+app.use(express.json({ limit: "10mb" }));
 
-const PORT=process.env.PORT || 8080
+const PORT = process.env.PORT || 8080;
 
-//making api
-app.get("/",(req,res)=>{
-    res.send("server is running")
-})
+// MONGODB connection
+mongoose.set("strictQuery", false);
 
-app.post("/signup",(req,res)=>{
-    console.log(req.body)
-})
+mongoose
+  .connect(process.env.MONGODB_URL)
+  .then(() => console.log("connected to the database"))
+  .catch((err) => console.log(err));
 
+// Schema
+const userSchema = mongoose.Schema({
+  firstName: String,
+  lastName: String,
+  email: {
+    type: String,
+    unique: true,
+  },
+  password: String,
+  confirmPassword: String,
+  image: String,
+});
 
+const userModel = mongoose.model("user", userSchema);
 
-//to see which port app is running
-app.listen(PORT,()=>console.log("server is runnint at :"+PORT))
+// API routes
+app.get("/", (req, res) => {
+  res.send("server is running");
+});
+
+app.post("/signup", (req, res) => {
+  console.log(req.body);
+  const { email } = req.body;
+
+  userModel.findOne({ email: email }, (err, result) => {
+    console.log(result);
+    console.log(err);
+    //if the email id is available
+    if (result) {
+      res.send({ message: "Email id already exists" });
+    } else {
+      //to save email id
+      const data = userModel(req.body);
+      const save = data.save();
+      res.send({ message: "Successfully signed up" });
+    }
+  });
+});
+
+app.listen(PORT, () => console.log("server is running at: " + PORT));
