@@ -46,22 +46,42 @@ app.post("/signup", (req, res) => {
     console.log(err);
     //if the email id is available
     if (result) {
-      res.send({ message: "Email id already exists", alert:false});
+      res.send({ message: "Email id already exists", alert: false });
     } else {
       //to save email id
       const data = userModel(req.body);
       const save = data.save();
-      res.send({ message: "Successfully signed up" ,alert: true});
+      res.send({ message: "Successfully signed up", alert: true });
     }
   });
 });
 
-
 //login api
 
-app.post("/login",(req,res)=>{
-  console.log(req.body)
+app.post("/login", (req, res) => {
+  console.log(req.body);
+  //extracting email
+  const { email } = req.body;
+  userModel.findOne({ email: email }, (err, result) => {
+    //if email is already registered , it will give data
+    if (result) {
+      //inputing results value into datasend
+      const dataSend = {
+        _id: result._id,
+        firstName: result.firstName,
+        lastName: result.lastName,
+        email: result.email,
+        image: result.image,
+      };
+      console.log(dataSend);
+//sending data through datasend
+      res.send({ message: "login successfull", alert: true ,data:dataSend});
+    }
+    else{
+      res.send({ message: "Email is not available, please sign up", alert: false});
 
-})
+    }
+  });
+});
 
 app.listen(PORT, () => console.log("server is running at: " + PORT));
