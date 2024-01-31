@@ -100,7 +100,6 @@ app.post("/uploadProduct",async(req,res)=>{
   const data=await productModel(req.body)
   const datasave=await data.save()
 
-
   res.send({message:"Uploaded Successfully"})
 })
 
