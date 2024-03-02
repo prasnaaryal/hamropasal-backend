@@ -1,7 +1,10 @@
 const categories = [
-    "icecream",
-    "groceries",
-    "accessories",
-]
+  "Headphones",
+  "Mobiles",
+  "Laptops",
+  "Accessories",
+  "Clothings",
+  "Shoes",
+];
 
 export default categories;
