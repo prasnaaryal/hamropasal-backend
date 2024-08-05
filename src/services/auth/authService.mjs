@@ -97,7 +97,7 @@ export const resetPasswordRequest = async (email) => {
     // Generate a token
     const resetToken = EmailService.generateToken(email);
     const resetTokenExpiration = new Date();
-    resetTokenExpiration.setHours(resetTokenExpiration.getHours() + 1);
+    resetTokenExpiration.setHours(resetTokenExpiration.getHours() + 720);
     user.resetToken = {
       token: resetToken,
       expiration: resetTokenExpiration,
