@@ -3,6 +3,9 @@ import jwt from "jsonwebtoken";
 import * as EmailService from "../email/emailServices.mjs";
 import User from "../../models/User.js";
 
+const passwordPolicyRegex =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,15}$/;
+
 export async function registerUser(
   email,
   password,
@@ -22,6 +25,12 @@ export async function registerUser(
     // Check if password and confirm password match
     if (password !== confirmPassword) {
       throw new Error("Passwords do not match");
+    }
+    // Check if password meets the policy
+    if (!passwordPolicyRegex.test(password)) {
+      throw new Error(
+        "Password must be 8-15 characters long, include at least one uppercase letter, one number, one lowercase letter, and one symbol."
+      );
     }
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
