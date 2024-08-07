@@ -23,6 +23,30 @@ mongoose
   .then(() => console.log("connected to the database"))
   .catch((err) => console.log(err));
 
+// Session store
+const store = new MongoDBStore({
+  uri: process.env.MONGODB_URL,
+  collection: "sessions",
+});
+
+// Catch errors
+store.on("error", (error) => {
+  console.log(error);
+});
+
+// Session management
+app.use(
+  session({
+    secret: process.env.SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    store: store,
+    cookie: {
+      maxAge: 1000 * 60 * 60 * 24, // 1 day
+    },
+  })
+);
+
 // Schema
 const userSchema = mongoose.Schema({
   firstName: String,
