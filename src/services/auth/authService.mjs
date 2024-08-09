@@ -3,9 +3,11 @@ import jwt from "jsonwebtoken";
 import * as EmailService from "../email/emailServices.mjs";
 import User from "../../models/User.js";
 
+// Password policy regex
 const passwordPolicyRegex =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{1,8}$/;
 
+// Registration service
 export async function registerUser(
   email,
   password,
@@ -20,18 +22,22 @@ export async function registerUser(
     if (existingUser) {
       throw new Error("User with the same Email or Username already exists");
     }
+
     // Check if password and confirm password match
     if (password !== confirmPassword) {
       throw new Error("Passwords do not match");
     }
+
     // Check if password meets the policy
     if (!passwordPolicyRegex.test(password)) {
       throw new Error(
         "Password must be maximum 8 characters long, include at least one uppercase letter, one number, one lowercase letter, and one symbol."
       );
     }
+
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
+
     // Create a new user
     const newUser = new User({
       firstName,
@@ -39,33 +45,52 @@ export async function registerUser(
       email,
       password: hashedPassword,
       image,
+      passwordChangedAt: Date.now(), // Initialize passwordChangedAt
     });
+
     // Save the user to the database
     await newUser.save();
+
     // Send verification email
     // const token = EmailService.generateToken(email);
     // await EmailService.sendVerificationEmail(email, token);
+
     return newUser;
   } catch (error) {
     throw new Error(error.message);
   }
 }
 
+// Login service
 export async function loginUser(email, password) {
   try {
     // Check if the user exists in the database
-    const user = await User.findOne({ email }).select("+password");
+    const user = await User.findOne({ email }).select(
+      "+password +passwordChangedAt"
+    );
+
     if (!user) {
       throw new Error("User does not exist");
     }
+
+    // Check if the password is expired (90 days)
+    const passwordExpiryDate = new Date(user.passwordChangedAt);
+    passwordExpiryDate.setDate(passwordExpiryDate.getDate() + 90);
+
+    if (Date.now() > passwordExpiryDate) {
+      throw new Error("Password has expired. Please reset your password.");
+    }
+
     // Compare the provided password with the stored hashed password
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
       throw new Error("Password does not match");
     }
+
     // JSON Web Token creation
     const LoggedInUser = { username: user.username, userId: user.id };
     const accessToken = jwt.sign(LoggedInUser, process.env.ACCESS_TOKEN_SECRET);
+
     // Login successful
     return accessToken;
   } catch (error) {
@@ -73,6 +98,7 @@ export async function loginUser(email, password) {
   }
 }
 
+// Email verification service
 export const verifyEmail = async (token) => {
   try {
     const decodedToken = jwt.verify(token, process.env.ACCESS_TOKEN_SECRET);
@@ -93,13 +119,14 @@ export const verifyEmail = async (token) => {
   }
 };
 
-// For reset password request
+// Request password reset service
 export const resetPasswordRequest = async (email) => {
   try {
     const user = await User.findOne({ email });
     if (!user) {
       throw new Error("User does not exist");
     }
+
     // Generate a token
     const resetToken = EmailService.generateToken(email);
     const resetTokenExpiration = new Date();
@@ -108,7 +135,9 @@ export const resetPasswordRequest = async (email) => {
       token: resetToken,
       expiration: resetTokenExpiration,
     };
+
     await user.save();
+
     // Send the email
     await EmailService.sendResetPasswordEmail(user.email, resetToken);
   } catch (error) {
@@ -116,13 +145,14 @@ export const resetPasswordRequest = async (email) => {
   }
 };
 
-// Verify reset password
+// Verify reset password token service
 export const verifyResetPassword = async (resetToken) => {
   try {
     const user = await User.findOne({
       "resetToken.token": resetToken,
       "resetToken.expiration": { $gt: Date.now() },
     });
+
     if (!user) {
       throw new Error("Invalid or expired reset token");
     }
@@ -132,16 +162,17 @@ export const verifyResetPassword = async (resetToken) => {
   }
 };
 
-// Reset password
+// Reset password service
 export const resetPassword = async (resetToken, password, confirmPassword) => {
   try {
     if (password !== confirmPassword) {
       throw new Error("Password and confirm password do not match");
     }
+
     const user = await User.findOne({
       "resetToken.token": resetToken,
       "resetToken.expiration": { $gt: Date.now() },
-    }).select("password oldPasswords");
+    }).select("password oldPasswords passwordChangedAt");
 
     if (!user) {
       throw new Error("Invalid or expired reset token");
@@ -170,6 +201,7 @@ export const resetPassword = async (resetToken, password, confirmPassword) => {
     user.oldPasswords = user.oldPasswords || [];
     user.oldPasswords.push(user.password);
     user.password = hashedPassword;
+    user.passwordChangedAt = Date.now(); // Update password change timestamp
     user.resetToken = undefined;
 
     // Limit the number of old passwords stored (optional, e.g., store only the last 5)

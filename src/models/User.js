@@ -30,6 +30,12 @@ const userSchema = new Schema({
     ],
   },
 
+  passwordChangedAt: {
+    type: Date,
+    default: Date.now,
+    select: false,
+  },
+
   image: {
     type: String,
     default: null,
