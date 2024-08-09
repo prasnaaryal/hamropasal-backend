@@ -3,9 +3,19 @@ import jwt from "jsonwebtoken";
 import * as EmailService from "../email/emailServices.mjs";
 import User from "../../models/User.js";
 
-// Password policy regex
-const passwordPolicyRegex =
-  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{1,8}$/;
+// Helper function to validate the password
+function validatePassword(password) {
+  if (password.length > 8) {
+    return false; // Password must be 8 characters or less
+  }
+
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumber = /\d/.test(password);
+  const hasSymbol = /[!@#$%^&*]/.test(password);
+
+  return hasUpperCase && hasLowerCase && hasNumber && hasSymbol;
+}
 
 // Registration service
 export async function registerUser(
@@ -28,10 +38,10 @@ export async function registerUser(
       throw new Error("Passwords do not match");
     }
 
-    // Check if password meets the policy
-    if (!passwordPolicyRegex.test(password)) {
+    // Validate the password
+    if (!validatePassword(password)) {
       throw new Error(
-        "Password must be maximum 8 characters long, include at least one uppercase letter, one number, one lowercase letter, and one symbol."
+        "Password must be a maximum of 8 characters long, include at least one uppercase letter, one lowercase letter, one number, and one special character."
       );
     }
 
@@ -51,7 +61,7 @@ export async function registerUser(
     // Save the user to the database
     await newUser.save();
 
-    // Send verification email
+    // Send verification email (optional)
     // const token = EmailService.generateToken(email);
     // await EmailService.sendVerificationEmail(email, token);
 
@@ -64,11 +74,12 @@ export async function registerUser(
 // Login service
 export async function loginUser(email, password) {
   try {
-    // Check if the user exists in the database
+    // Find the user by email
     const user = await User.findOne({ email }).select(
       "+password +passwordChangedAt"
     );
 
+    // Check if the user exists
     if (!user) {
       throw new Error("User does not exist");
     }
@@ -88,7 +99,7 @@ export async function loginUser(email, password) {
     }
 
     // JSON Web Token creation
-    const LoggedInUser = { username: user.username, userId: user.id };
+    const LoggedInUser = { username: user.username, userId: user._id };
     const accessToken = jwt.sign(LoggedInUser, process.env.ACCESS_TOKEN_SECRET);
 
     // Login successful
@@ -156,6 +167,8 @@ export const verifyResetPassword = async (resetToken) => {
     if (!user) {
       throw new Error("Invalid or expired reset token");
     }
+
+    return user;
   } catch (error) {
     // Handle the error and provide a more informative error message
     throw new Error(`Reset password verification failed: ${error.message}`);
@@ -167,6 +180,13 @@ export const resetPassword = async (resetToken, password, confirmPassword) => {
   try {
     if (password !== confirmPassword) {
       throw new Error("Password and confirm password do not match");
+    }
+
+    // Validate the new password
+    if (!validatePassword(password)) {
+      throw new Error(
+        "Password must be a maximum of 8 characters long, include at least one uppercase letter, one lowercase letter, one number, and one special character."
+      );
     }
 
     const user = await User.findOne({

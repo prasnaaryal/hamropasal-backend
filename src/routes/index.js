@@ -2,10 +2,11 @@ import express from "express";
 
 // Import the routes from other files
 import authRoutes from "./auth/authRoutes.js";
-import userRoutes from "./user/userRoutes.js"
-import productRoutes from "./product/productRoutes.js"
-import categoryRoutes from "./category/categoryRoutes.js" // Use the imported routes const router = express.Router();
-import orderRoutes from "./order/orderRoutes.js"
+import userRoutes from "./user/userRoutes.js";
+import productRoutes from "./product/productRoutes.js";
+import categoryRoutes from "./category/categoryRoutes.js"; // Use the imported routes const router = express.Router();
+import orderRoutes from "./order/orderRoutes.js";
+import auditRoutes from "./auditLog/auditRoutes.js";
 
 const router = express.Router();
 
@@ -14,5 +15,6 @@ router.use("/user", userRoutes); // localhost:9000/api/user/load-user
 router.use("/product", productRoutes); // localhost:9000/api/product
 router.use("/category", categoryRoutes); // localhost:9000/api/category
 router.use("/order", orderRoutes); // localhost:9000/api/order
+router.use("/audit", auditRoutes);
 
 export default router;

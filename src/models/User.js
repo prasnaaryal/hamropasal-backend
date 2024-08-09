@@ -24,10 +24,6 @@ const userSchema = new Schema({
     required: true,
     minlength: [6, "Minimum password length is 6"],
     select: false,
-    match: [
-      /^(?=.*[!@#$%^&*(),.?":{}|<>])(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9]).{6,8}$/,
-      "Password must have uppercase, lowercase, special character, and be between 6-8 characters.",
-    ],
   },
 
   passwordChangedAt: {
