@@ -4,7 +4,7 @@ import * as EmailService from "../email/emailServices.mjs";
 import User from "../../models/User.js";
 
 const passwordPolicyRegex =
-  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,15}$/;
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{1,8}$/;
 
 export async function registerUser(
   email,
@@ -29,7 +29,7 @@ export async function registerUser(
     // Check if password meets the policy
     if (!passwordPolicyRegex.test(password)) {
       throw new Error(
-        "Password must be 8-15 characters long, include at least one uppercase letter, one number, one lowercase letter, and one symbol."
+        "Password must be maximum 8 characters long, include at least one uppercase letter, one number, one lowercase letter, and one symbol."
       );
     }
     // Hash the password
