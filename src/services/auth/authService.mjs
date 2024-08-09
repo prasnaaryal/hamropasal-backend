@@ -16,9 +16,7 @@ export async function registerUser(
 ) {
   try {
     // Check if user already exists
-    const existingUser = await User.findOne({
-      $or: [{ email }],
-    });
+    const existingUser = await User.findOne({ email });
     if (existingUser) {
       throw new Error("User with the same Email or Username already exists");
     }
@@ -44,12 +42,12 @@ export async function registerUser(
     });
     // Save the user to the database
     await newUser.save();
-    // send verification email
+    // Send verification email
     // const token = EmailService.generateToken(email);
     // await EmailService.sendVerificationEmail(email, token);
     return newUser;
   } catch (error) {
-    throw new Error(error);
+    throw new Error(error.message);
   }
 }
 
@@ -57,22 +55,21 @@ export async function loginUser(email, password) {
   try {
     // Check if the user exists in the database
     const user = await User.findOne({ email }).select("+password");
-
     if (!user) {
-      throw new Error("User doesnot exist");
+      throw new Error("User does not exist");
     }
     // Compare the provided password with the stored hashed password
     const passwordMatch = await bcrypt.compare(password, user.password);
     if (!passwordMatch) {
-      throw new Error("Password doesnot match");
+      throw new Error("Password does not match");
     }
-    // jsonWebToken
+    // JSON Web Token creation
     const LoggedInUser = { username: user.username, userId: user.id };
     const accessToken = jwt.sign(LoggedInUser, process.env.ACCESS_TOKEN_SECRET);
     // Login successful
     return accessToken;
   } catch (error) {
-    throw new Error(error);
+    throw new Error(error.message);
   }
 }
 
@@ -88,20 +85,20 @@ export const verifyEmail = async (token) => {
     );
 
     if (!user) {
-      throw new Error({ message: "User doesnot exist" });
+      throw new Error("User does not exist");
     }
     return user;
   } catch (error) {
-    throw new Error(error);
+    throw new Error(error.message);
   }
 };
 
-// for reset password request
+// For reset password request
 export const resetPasswordRequest = async (email) => {
   try {
     const user = await User.findOne({ email });
     if (!user) {
-      throw new Error("User doesnot exist");
+      throw new Error("User does not exist");
     }
     // Generate a token
     const resetToken = EmailService.generateToken(email);
@@ -115,7 +112,7 @@ export const resetPasswordRequest = async (email) => {
     // Send the email
     await EmailService.sendResetPasswordEmail(user.email, resetToken);
   } catch (error) {
-    throw new Error(error);
+    throw new Error(error.message);
   }
 };
 
@@ -139,27 +136,49 @@ export const verifyResetPassword = async (resetToken) => {
 export const resetPassword = async (resetToken, password, confirmPassword) => {
   try {
     if (password !== confirmPassword) {
-      throw new Error("Password and confirm password doesnot match");
+      throw new Error("Password and confirm password do not match");
     }
     const user = await User.findOne({
       "resetToken.token": resetToken,
       "resetToken.expiration": { $gt: Date.now() },
-    }).select("password");
+    }).select("password oldPasswords");
+
     if (!user) {
       throw new Error("Invalid or expired reset token");
     }
+
     // Hash the new password
     const hashedPassword = await bcrypt.hash(password, 10);
-    // Check if the new password is the same as the old password
+
+    // Check if the new password is the same as the old password or any of the old passwords
     const isSamePassword = await bcrypt.compare(password, user.password);
-    if (isSamePassword) {
-      throw new Error("New password cannot be the same as the old password");
+    const isOldPassword = user.oldPasswords
+      ? await Promise.all(
+          user.oldPasswords.map(async (oldPassword) =>
+            bcrypt.compare(password, oldPassword)
+          )
+        )
+      : [];
+
+    if (isSamePassword || isOldPassword.includes(true)) {
+      throw new Error(
+        "New password cannot be the same as any previous passwords"
+      );
     }
-    // Update the user's password
+
+    // Update the user's password and add the current password to oldPasswords
+    user.oldPasswords = user.oldPasswords || [];
+    user.oldPasswords.push(user.password);
     user.password = hashedPassword;
     user.resetToken = undefined;
+
+    // Limit the number of old passwords stored (optional, e.g., store only the last 5)
+    if (user.oldPasswords.length > 5) {
+      user.oldPasswords.shift();
+    }
+
     await user.save();
   } catch (error) {
-    throw new Error(error);
+    throw new Error(error.message);
   }
 };

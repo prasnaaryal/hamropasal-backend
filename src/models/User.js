@@ -1,4 +1,3 @@
-// Schema is a class that allows us to represent a collection of fields
 import { Schema, model } from "mongoose";
 import isEmail from "validator/lib/isEmail.js";
 
@@ -17,17 +16,17 @@ const userSchema = new Schema({
     type: String,
     required: true,
     unique: true,
-    validate: [isEmail, "please enter valid email"],
+    validate: [isEmail, "Please enter a valid email"],
   },
 
   password: {
     type: String,
     required: true,
-    minlength: [6, "Minimun password length is 6"],
+    minlength: [6, "Minimum password length is 6"],
     select: false,
     match: [
-      /^(?=.*[!@#$%^&*(),.?":{}|<>])(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9]).{6,}$/,
-      "Password must have uppercase, lowercase and special character.",
+      /^(?=.*[!@#$%^&*(),.?":{}|<>])(?=.*[A-Z])(?=.*[a-z])(?=.*[0-9]).{6,8}$/,
+      "Password must have uppercase, lowercase, special character, and be between 6-8 characters.",
     ],
   },
 
@@ -48,6 +47,13 @@ const userSchema = new Schema({
       select: false,
     },
   },
+
+  oldPasswords: [
+    {
+      type: String,
+      select: false,
+    },
+  ],
 });
 
 userSchema.index({ email: 1 }, { unique: true });
