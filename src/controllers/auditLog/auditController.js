@@ -1,4 +1,9 @@
-import { logAction, getAuditLogs } from "../../services/auditLog/auditService.js";
+import {
+  logAction,
+  getAuditLogs,
+} from "../../services/auditLog/auditService.js";
+import logger from "../../utils/logger.js";
+
 
 /**
  * Log a user action.
@@ -24,6 +29,20 @@ export const getAuditLogsController = async (req, res) => {
   try {
     const { userId, startDate, endDate } = req.query;
 
+    console.log("i'm here!!!");
+
+    const log = {
+      userId: userId,
+      action: "Logs",
+      ipAddress: null,
+      additionalInfo: {
+        message: "Get Audit Logs",
+      },
+    }
+
+    logger.info(log);
+
+
     const filters = {
       userId,
       startDate: startDate ? new Date(startDate) : undefined,
@@ -31,6 +50,7 @@ export const getAuditLogsController = async (req, res) => {
     };
 
     const logs = await getAuditLogs(filters);
+
 
     res.status(200).json(logs);
   } catch (error) {

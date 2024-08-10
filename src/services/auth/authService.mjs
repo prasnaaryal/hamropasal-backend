@@ -2,6 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import * as EmailService from "../email/emailServices.mjs";
 import User from "../../models/User.js";
+import logger from "../../utils/logger.js";
 
 // Helper function to validate the password
 function validatePassword(password) {
@@ -81,6 +82,16 @@ export async function loginUser(email, password) {
 
     // Check if the user exists
     if (!user) {
+      const log = {
+        userId: null,
+        action: "Login",
+        ipAddress: null,
+        additionalInfo: {
+          message: "User does not exist",
+        },
+      }
+
+      logger.error(log);
       throw new Error("User does not exist");
     }
 
@@ -101,6 +112,17 @@ export async function loginUser(email, password) {
     // JSON Web Token creation
     const LoggedInUser = { username: user.username, userId: user._id };
     const accessToken = jwt.sign(LoggedInUser, process.env.ACCESS_TOKEN_SECRET);
+
+    const log = {
+      userId: user._id,
+      action: "Login",
+      ipAddress: null,
+      additionalInfo: {
+        message: "User logged in successfully",
+      },
+    }
+
+    logger.info(log);
 
     // Login successful
     return accessToken;

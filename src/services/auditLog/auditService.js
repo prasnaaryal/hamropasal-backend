@@ -46,8 +46,8 @@ export const getAuditLogs = async (filters = {}) => {
     query.timestamp.$lte = filters.endDate;
   }
 
-  return await AuditLog.find(query).populate(
-    "userId",
-    "firstName lastName email"
-  );
+
+  console.log(query);
+
+  return await AuditLog.find(query);
 };

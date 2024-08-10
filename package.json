@@ -25,7 +25,8 @@
     "nodemailer": "^6.9.8",
     "nodemon": "^2.0.20",
     "validator": "^13.11.0",
-    "winston": "^3.13.1"
+    "winston": "^3.13.1",
+    "winston-mongodb": "^5.1.1"
   },
   "devDependencies": {
     "@babel/preset-env": "^7.23.9",

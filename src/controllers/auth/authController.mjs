@@ -1,14 +1,8 @@
 import * as AuthService from "../../services/auth/authService.mjs";
 
 export const register = async (req, res) => {
-  const {
-    firstName,
-    lastName,
-    email,
-    password,
-    confirmPassword,
-    image,
-  } = req.body;
+  const { firstName, lastName, email, password, confirmPassword, image } =
+    req.body;
   try {
     const user = await AuthService.registerUser(
       email.trim(),
@@ -29,7 +23,10 @@ export const register = async (req, res) => {
 export const login = async (req, res) => {
   const { email, password } = req.body;
   try {
-    const accessToken = await AuthService.loginUser(email.trim(), password.trim());
+    const accessToken = await AuthService.loginUser(
+      email.trim(),
+      password.trim()
+    );
     return res
       .status(200)
       .json({ message: "User logged in successfully", accessToken });
