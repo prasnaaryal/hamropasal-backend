@@ -1,6 +1,8 @@
 const express = require("express");
 const cors = require("cors");
 const mongoose = require("mongoose");
+const session = require("express-session");
+const MongoDBStore = require("connect-mongodb-session")(session);
 const dotenv = require("dotenv").config();
 
 const app = express();
@@ -26,6 +28,7 @@ mongoose
 // Session store
 const store = new MongoDBStore({
   uri: process.env.MONGODB_URL,
+  databaseName: "hamropasalEcommerce",
   collection: "sessions",
 });
 
