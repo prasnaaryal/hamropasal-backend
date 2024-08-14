@@ -89,7 +89,7 @@ export async function loginUser(email, password) {
         additionalInfo: {
           message: "User does not exist",
         },
-      }
+      };
 
       logger.error(log);
       throw new Error("User does not exist");
@@ -120,7 +120,7 @@ export async function loginUser(email, password) {
       additionalInfo: {
         message: "User logged in successfully",
       },
-    }
+    };
 
     logger.info(log);
 
@@ -256,3 +256,45 @@ export const resetPassword = async (resetToken, password, confirmPassword) => {
     throw new Error(error.message);
   }
 };
+
+export async function lockInactiveAccounts() {
+  const thirtyDaysAgo = new Date();
+  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+  try {
+    const inactiveUsers = await User.updateMany(
+      {
+        lastLoginDate: { $lt: thirtyDaysAgo },
+        isLocked: false,
+      },
+      {
+        $set: { isLocked: true },
+      }
+    );
+
+    logger.info(`Locked ${inactiveUsers.nModified} inactive accounts.`);
+  } catch (error) {
+    logger.error(`Error locking inactive accounts: ${error.message}`);
+  }
+}
+
+// Function to unlock an account (to be used by admin or support)
+export async function unlockAccount(userId) {
+  try {
+    const user = await User.findByIdAndUpdate(
+      userId,
+      { isLocked: false, lastLoginDate: Date.now() },
+      { new: true }
+    );
+
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    logger.info(`Unlocked account for user: ${userId}`);
+    return user;
+  } catch (error) {
+    logger.error(`Error unlocking account: ${error.message}`);
+    throw new Error(`Failed to unlock account: ${error.message}`);
+  }
+}
