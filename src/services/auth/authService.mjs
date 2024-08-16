@@ -257,33 +257,41 @@ export const resetPassword = async (resetToken, password, confirmPassword) => {
   }
 };
 
-export async function lockInactiveAccounts() {
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-
+export async function checkAndLockAccount(userId, isPasswordValid) {
   try {
-    const inactiveUsers = await User.updateMany(
-      {
-        lastLoginDate: { $lt: thirtyDaysAgo },
-        isLocked: false,
-      },
-      {
-        $set: { isLocked: true },
-      }
-    );
+    const user = await User.findById(userId);
 
-    logger.info(`Locked ${inactiveUsers.nModified} inactive accounts.`);
+    if (!user) {
+      throw new Error("User not found");
+    }
+
+    if (!isPasswordValid) {
+      user.failedLoginAttempts = (user.failedLoginAttempts || 0) + 1;
+
+      if (user.failedLoginAttempts >= 3) {
+        user.isLocked = true;
+        logger.info(
+          `Locked account for user: ${userId} due to multiple failed login attempts`
+        );
+      }
+    } else {
+      user.failedLoginAttempts = 0;
+    }
+
+    await user.save();
+
+    return user;
   } catch (error) {
-    logger.error(`Error locking inactive accounts: ${error.message}`);
+    logger.error(`Error checking and locking account: ${error.message}`);
+    throw new Error(`Failed to check and lock account: ${error.message}`);
   }
 }
 
-// Function to unlock an account (to be used by admin or support)
 export async function unlockAccount(userId) {
   try {
     const user = await User.findByIdAndUpdate(
       userId,
-      { isLocked: false, lastLoginDate: Date.now() },
+      { isLocked: false, failedLoginAttempts: 0 },
       { new: true }
     );
 
